@@ -1,0 +1,41 @@
+module digital_clock(input clk_out_seconds,input clk_out_200, input reset, input display,input alarm_count_min, input alarm_count_hours, input updown,input counthour, input countmin,  input en,  output [6:0] segments, output [3:0] anode_active, output zflag);
+reg [3:0] num;
+wire[1:0] count;
+wire[3:0] sec1;
+wire[3:0] sec2;
+wire[3:0] min1;
+wire[3:0] min2;
+wire[3:0] hr1;
+wire[3:0] hr2;
+
+wire[3:0] alarm_min1;
+wire[3:0] alarm_min2;
+wire[3:0] alarm_hr1;
+wire[3:0] alarm_hr2;
+
+
+SevenSegDecWithEn seg(.en(count), .num(num), .segments(segments), .anode_active(anode_active));
+
+Binary_Counter #(2,4)BC(.clk(clk_out_200), .reset(reset), .en(1'b1), .count(count), .updown(updown));
+MinHour secmin(.clk_out_seconds(clk_out_seconds), .count_hours(counthour),.count_min(countmin),.Updown(updown), .reset(reset), .seconds_units(sec1), .seconds_tens(sec2), .minutes_units(min1), .minutes_tens(min2), .hours_units(hr1), .hours_tens(hr2),.enable_seconds(en));
+AlarmMinHour alarm(.clk_out_seconds(clk_out_seconds), .reset(reset), .Updown(updown),  .alarm_count_hours(alarm_count_hours) ,.alarm_count_min(alarm_count_min), .alarm_minutes_units(alarm_min1), .alarm_minutes_tens(alarm_min2),.alarm_hours_units(alarm_hr1),.alarm_hours_tens(alarm_hr2));
+assign zflag =  alarm_min1==min1 & alarm_min2 == min2 & alarm_hr1 == hr1 & alarm_hr2 == hr2 & sec1 == 0 &  sec2 == 0;
+    
+always @(count)begin
+if(count==0)
+num = display ? alarm_min1 : min1;
+
+else if (count == 1)
+num = display ? alarm_min2 : min2;
+
+else if (count == 2)
+num = display ? alarm_hr1 : hr1;
+
+else if(count == 3)
+num = display ? alarm_hr2 : hr2;
+
+end
+
+
+
+endmodule
